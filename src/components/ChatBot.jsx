@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const ChatBot = () => {
@@ -9,8 +9,12 @@ const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showGreeting, setShowGreeting] = useState(false);
   const [connectionMode, setConnectionMode] = useState('checking'); // 'online', 'offline', 'checking'
+  const [availableModels, setAvailableModels] = useState([]);
+  const [selectedModel, setSelectedModel] = useState('llama3.2:1b');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const eventSourceRef = useRef(null);
 
   // Suggested prompts
   const suggestedPrompts = [
@@ -20,60 +24,91 @@ const ChatBot = () => {
     "Tell me about your curriculum"
   ];
 
-  // Check connection status on mount
-  useEffect(() => {
-    checkConnectionStatus();
-  }, []);
-
-  // Function to check connection status
-  const checkConnectionStatus = async () => {
-    setConnectionMode('checking');
+  // Python API base URL (adjusted for the new server location)
+  const PYTHON_API_BASE = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:5001' 
+    : '/api-py';  // Use a proxy path in production
     
+  // Check server connection and available models
+  const checkConnectionStatus = useCallback(async () => {
     try {
-      // Try server connection first
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/ollama/chat'  // In production, use relative path
-        : 'http://localhost:5000/api/ollama/chat'; // In development
-        
-      const serverResponse = await fetch(apiUrl, {
-        method: 'HEAD',
-        signal: AbortSignal.timeout(3000)
-      }).catch(() => null);
+      // Try different endpoints to accommodate both APIs
+      const endpoint = `${PYTHON_API_BASE}/status`;
       
-      if (serverResponse && serverResponse.ok) {
-        console.log("Server available");
-        setConnectionMode('online');
-        return;
-      }
+      console.log(`Checking connection status at: ${endpoint}`);
+      const response = await fetch(endpoint);
       
-      // If server fails, try direct Ollama connection
-      try {
-        // Direct API check to Ollama
-        const ollamaResponse = await fetch('http://localhost:11434/api/version', {
-          method: 'GET',
-          signal: AbortSignal.timeout(3000)
-        }).catch(() => null);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Connection data:", data);
         
-        if (ollamaResponse && ollamaResponse.ok) {
-          console.log("Ollama API available");
+        if (data.status === "ok") {
           setConnectionMode('online');
-          return;
+          if (data.models && Array.isArray(data.models)) {
+            // Format models for display
+            const formattedModels = data.models.map(model => 
+              typeof model === 'string' ? { name: model } : model
+            );
+            setAvailableModels(formattedModels);
+            setSelectedModel(data.current_model || formattedModels[0]?.name || "llama2");
+          }
+        } else {
+          setConnectionMode('offline');
         }
-      } catch (ollamaError) {
-        console.log("Direct Ollama connection failed:", ollamaError.message);
+      } else {
+        // Fall back to the original API check
+        try {
+          const apiHealthResponse = await fetch(`${PYTHON_API_BASE}/api/health`);
+          if (apiHealthResponse.ok) {
+            setConnectionMode('online');
+            
+            // If health check works, also try to get models
+            try {
+              const modelsResponse = await fetch(`${PYTHON_API_BASE}/api/models`);
+              if (modelsResponse.ok) {
+                const modelsData = await modelsResponse.json();
+                if (modelsData.success && modelsData.models) {
+                  setAvailableModels(modelsData.models);
+                  setSelectedModel(modelsData.models[0]?.name || "llama2");
+                }
+              }
+            } catch (e) {
+              console.warn("Could not fetch models:", e);
+            }
+          } else {
+            setConnectionMode('offline');
+          }
+        } catch (healthError) {
+          console.error("API health check failed:", healthError);
+          setConnectionMode('offline');
+        }
       }
-      
-      // If both fail, we're offline
-      console.log("No connections available, switching to offline mode");
-      setConnectionMode('offline');
-      
     } catch (error) {
-      console.error("Error checking connection status:", error);
+      console.error("Connection check failed:", error);
       setConnectionMode('offline');
     }
-  };
+  }, [PYTHON_API_BASE]);
 
-  // Scroll to bottom of messages
+  // Check connection on mount
+  useEffect(() => {
+    checkConnectionStatus();
+    const intervalId = setInterval(checkConnectionStatus, 30000);
+    return () => clearInterval(intervalId);
+  }, [checkConnectionStatus]);
+
+  // Clean up resources on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
+  // Scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -89,7 +124,7 @@ const ChatBot = () => {
     }
   }, [isOpen]);
 
-  // Listen for custom event from fallback chatbot
+  // Custom event listener for opening the chatbot
   useEffect(() => {
     const handleCustomEvent = () => {
       console.log('Received openChatbot event');
@@ -97,10 +132,8 @@ const ChatBot = () => {
       setShowGreeting(false);
     };
 
-    // Listen for custom event
     document.addEventListener('openChatbot', handleCustomEvent);
-
-    // Check localStorage for a trigger from fallback chatbot
+    
     const checkLocalStorage = () => {
       const shouldOpen = localStorage.getItem('openChatbot');
       const timestamp = localStorage.getItem('chatbotTimestamp');
@@ -109,37 +142,32 @@ const ChatBot = () => {
         const now = Date.now();
         const storedTime = parseInt(timestamp, 10);
         
-        // Only open if the localStorage item was set in the last 5 seconds
         if (now - storedTime < 5000) {
           console.log('Opening chatbot from localStorage trigger');
           setIsOpen(true);
           setShowGreeting(false);
           
-          // Clear the localStorage items
           localStorage.removeItem('openChatbot');
           localStorage.removeItem('chatbotTimestamp');
         }
       }
     };
-
-    // Run the check immediately and then every second
+    
     checkLocalStorage();
     const interval = setInterval(checkLocalStorage, 1000);
-
-    // Clean up event listener and interval
+    
     return () => {
       document.removeEventListener('openChatbot', handleCustomEvent);
       clearInterval(interval);
     };
   }, []);
 
-  // Show greeting bubble after a short delay when page loads
+  // Show greeting bubble after delay
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowGreeting(true);
     }, 3000);
     
-    // Hide greeting after some time
     const hideTimer = setTimeout(() => {
       setShowGreeting(false);
     }, 10000);
@@ -153,9 +181,8 @@ const ChatBot = () => {
   // Toggle chat window
   const toggleChat = () => {
     setIsOpen(!isOpen);
-    setShowGreeting(false); // Hide greeting when chat is opened
+    setShowGreeting(false);
     
-    // If opening chat, check connection again
     if (!isOpen) {
       checkConnectionStatus();
     }
@@ -166,170 +193,443 @@ const ChatBot = () => {
     setInput(e.target.value);
   };
 
-  // Handle sending a message
-  const handleSendMessage = async (messageText = input) => {
-    if (!messageText.trim()) return;
+  // Clean up active connections
+  const closeActiveConnections = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
 
+  // Send message
+  const sendMessage = async (e) => {
+    e?.preventDefault();
+    
+    if (!input.trim()) return;
+    
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      text: input,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
     // Add user message to chat
-    const userMessage = { text: messageText, sender: 'user', timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    
+    if (connectionMode === 'offline') {
+      handleFallbackResponse(userMessage.text);
+      return;
+    }
+    
+    // Try streaming first
+    try {
+      await streamResponse(userMessage.text);
+    } catch (error) {
+      console.log("Streaming failed, falling back to regular API:", error);
+      try {
+        await fetchDirectResponse(userMessage.text);
+      } catch (fallbackError) {
+        console.error("All API methods failed:", fallbackError);
+        setConnectionMode('offline');
+        handleFallbackResponse(userMessage.text);
+      }
+    }
+  };
+
+  // Stream response using Server-Sent Events
+  const streamResponse = async (messageText) => {
+    if (!messageText.trim()) return;
+    
+    // Cancel any ongoing stream
+    closeActiveConnections();
+    
     setIsLoading(true);
+    
+    // Create a bot response placeholder
+    const botResponseId = `bot-${Date.now()}`;
+    
+    setMessages(prev => [
+      ...prev, 
+      {
+        id: botResponseId,
+        text: '',
+        sender: 'bot',
+        timestamp: new Date(),
+        isStreaming: true
+      }
+    ]);
 
     try {
-      let serverSuccess = false;
+      console.log("Using direct request for better mobile compatibility");
       
-      // First attempt: Try the backend proxy server
-      try {
-        console.log("Attempting to connect to backend server...");
-        const apiUrl = process.env.NODE_ENV === 'production' 
-          ? '/api/ollama/chat'  // In production, use relative path
-          : 'http://localhost:5000/api/ollama/chat'; // In development
+      // Use direct fetch for better compatibility 
+      const response = await fetch(`${PYTHON_API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageText,
+          model: selectedModel
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Get full response and simulate typing effect
+        const fullResponse = data.response;
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        // Adjust typing speed based on device type (slower on mobile)
+        const isMobile = window.innerWidth <= 768;
+        const avgTypingSpeed = isMobile ? 10 : 20; // chars per update
+        const typingDelay = isMobile ? 150 : 100; // ms between updates
         
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: messageText,
-            model: 'llama2' // or use env variable if available
-          }),
-          signal: controller.signal
-        });
+        let displayedResponse = '';
+        const responseLength = fullResponse.length;
         
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          const data = await response.json();
-          setConnectionMode('online');
-          console.log("Server response successful");
-          
-          // Add bot response to chat
-          setMessages(prev => [
-            ...prev, 
-            { 
-              text: data.response, 
-              sender: 'bot', 
-              timestamp: new Date() 
-            }
-          ]);
-          serverSuccess = true;
-        } else {
-          console.log("Server returned error status:", response.status);
-          throw new Error(`Server returned ${response.status}`);
-        }
-      } catch (serverError) {
-        console.log("Server connection failed:", serverError.message);
+        // Only use typing effect for responses under a certain length (prevents long delays on mobile)
+        const shouldSimulateTyping = responseLength < 1000 || !isMobile;
         
-        // Second attempt: Try direct Ollama connection via direct API
-        if (!serverSuccess) {
-          try {
-            console.log("Attempting direct connection via Ollama API...");
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-            
-            const response = await fetch('http://localhost:11434/api/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                model: 'llama2',
-                messages: [
-                  { role: 'user', content: messageText }
-                ],
-                stream: false
-              }),
-              signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (response.ok) {
-              const result = await response.json();
+        if (shouldSimulateTyping) {
+          const simulateTyping = () => {
+            if (displayedResponse.length < responseLength) {
+              const nextChunkEnd = Math.min(
+                displayedResponse.length + avgTypingSpeed,
+                responseLength
+              );
+              displayedResponse = fullResponse.substring(0, nextChunkEnd);
               
-              setConnectionMode('online');
-              console.log("Direct Ollama connection successful");
+              setMessages(prev => prev.map(msg => 
+                msg.id === botResponseId ? {
+                  ...msg,
+                  text: displayedResponse,
+                  isStreaming: displayedResponse.length < responseLength
+                } : msg
+              ));
               
-              // Add bot response to chat
-              setMessages(prev => [
-                ...prev, 
-                { 
-                  text: result.message.content, 
-                  sender: 'bot', 
-                  timestamp: new Date() 
-                }
-              ]);
-              serverSuccess = true;
+              // Continue typing
+              setTimeout(simulateTyping, typingDelay);
             } else {
-              console.log("Ollama returned error status:", response.status);
-              throw new Error(`Ollama returned ${response.status}`);
+              // Done typing
+              setMessages(prev => prev.map(msg => 
+                msg.id === botResponseId ? {
+                  ...msg,
+                  isStreaming: false
+                } : msg
+              ));
+              setIsLoading(false);
             }
-          } catch (ollamaError) {
-            console.log("Direct Ollama connection failed:", ollamaError.message);
-            setConnectionMode('offline');
-            throw ollamaError; // Rethrow to be caught by the outer catch block
-          }
+          };
+          
+          // Start typing simulation
+          simulateTyping();
+        } else {
+          // For very long responses on mobile, just show the full response immediately
+          setMessages(prev => prev.map(msg => 
+            msg.id === botResponseId ? {
+              ...msg,
+              text: fullResponse,
+              isStreaming: false
+            } : msg
+          ));
+          setIsLoading(false);
         }
+      } else {
+        throw new Error(data.error || "Unknown error");
       }
-      
     } catch (error) {
-      console.error('All connection attempts failed:', error);
+      console.error("Response error:", error);
       
-      // Fallback: Simple local response system
-      const lowerCaseMessage = messageText.toLowerCase();
-      let fallbackResponse = "Sorry, I'm having trouble connecting to my knowledge base. Please try again later.";
+      // Show a different error for mobile devices
+      const isMobile = window.innerWidth <= 768;
+      const errorMessage = isMobile 
+        ? "Sorry, there was a problem connecting to the AI service. Please try again." 
+        : "Sorry, I encountered an error connecting to the AI service. Please try again later.";
       
-      // Simple local response patterns
-      if (lowerCaseMessage.includes("school hours") || lowerCaseMessage.includes("open")) {
-        fallbackResponse = "Our school hours are Monday to Friday, 8:30 AM to 3:30 PM.";
-      } else if (lowerCaseMessage.includes("enroll") || lowerCaseMessage.includes("register")) {
-        fallbackResponse = "To enroll your child, please visit our Contact page and fill out the form or call our administrative office.";
-      } else if (lowerCaseMessage.includes("grades") || lowerCaseMessage.includes("classes")) {
-        fallbackResponse = "We offer classes from Kindergarten through 8th grade with Orthodox Christian education.";
-      } else if (lowerCaseMessage.includes("curriculum") || lowerCaseMessage.includes("subjects")) {
-        fallbackResponse = "Our curriculum includes standard academic subjects with an integration of Orthodox Christian values and teachings.";
-      } else if (lowerCaseMessage.includes("hello") || lowerCaseMessage.includes("hi")) {
-        fallbackResponse = "Hello! I'm currently in offline mode, but I can answer basic questions about our school.";
+      setMessages(prev => prev.map(msg => 
+        msg.id === botResponseId ? {
+          ...msg,
+          text: errorMessage,
+          isStreaming: false,
+          isError: true
+        } : msg
+      ));
+      
+      setIsLoading(false);
+    }
+  };
+
+  // Regular non-streaming API
+  const fetchDirectResponse = async (messageText) => {
+    const botMessageId = `bot-${Date.now()}`;
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(`${PYTHON_API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageText,
+          model: selectedModel
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
       }
       
-      // Add the fallback response
+      const data = await response.json();
+      
       setMessages(prev => [
-        ...prev, 
-        { 
-          text: fallbackResponse, 
-          sender: 'bot', 
-          timestamp: new Date(),
-          isFallback: true
+        ...prev,
+        {
+          id: botMessageId,
+          text: data.response || "I received your message but have no response.",
+          sender: 'bot',
+          timestamp: new Date()
         }
       ]);
+      
+      setConnectionMode('online');
+    } catch (error) {
+      console.error("API error:", error);
+      
+      setMessages(prev => [
+        ...prev,
+        {
+          id: botMessageId,
+          text: "Sorry, I encountered an error. Please try again later.",
+          sender: 'bot',
+          timestamp: new Date(),
+          isError: true
+        }
+      ]);
+      
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle prompt click
+  // Fallback response when offline
+  const handleFallbackResponse = (messageText) => {
+    const lowerCaseMessage = messageText.toLowerCase();
+    let fallbackResponse = "Sorry, I'm having trouble connecting to the Ollama API. Please make sure the Python server is running.";
+    
+    // Simple patterns for offline mode
+    if (lowerCaseMessage.includes("school hours") || lowerCaseMessage.includes("open")) {
+      fallbackResponse = "Our school hours are Monday to Friday, 8:30 AM to 3:30 PM.";
+    } else if (lowerCaseMessage.includes("enroll") || lowerCaseMessage.includes("register")) {
+      fallbackResponse = "To enroll your child, please visit our Contact page and fill out the form or call our administrative office.";
+    } else if (lowerCaseMessage.includes("grades") || lowerCaseMessage.includes("classes")) {
+      fallbackResponse = "We offer classes from Kindergarten through 8th grade with Orthodox Christian education.";
+    } else if (lowerCaseMessage.includes("curriculum") || lowerCaseMessage.includes("subjects")) {
+      fallbackResponse = "Our curriculum includes standard academic subjects with an integration of Orthodox Christian values and teachings.";
+    } else if (lowerCaseMessage.includes("hello") || lowerCaseMessage.includes("hi")) {
+      fallbackResponse = "Hello! I'm currently in offline mode, but I can answer basic questions about our school.";
+    } else if (lowerCaseMessage.includes("ollama") || lowerCaseMessage.includes("api") || lowerCaseMessage.includes("python")) {
+      fallbackResponse = "The AI chatbot requires the Python server to be running. Make sure you've installed the dependencies with 'pip install -r requirements.txt' and started the server with 'python ollama_server.py'.";
+    }
+    
+    // Add fallback response
+    setMessages(prev => [
+      ...prev, 
+      { 
+        id: `bot-${Date.now()}`,
+        text: fallbackResponse, 
+        sender: 'bot', 
+        timestamp: new Date(),
+        isFallback: true
+      }
+    ]);
+  };
+
+  // Handle clicking suggested prompt
   const handlePromptClick = (prompt) => {
-    handleSendMessage(prompt);
+    setInput(prompt);
+    sendMessage({ preventDefault: () => {} });
   };
 
   // Handle key press
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleSendMessage();
+      sendMessage(e);
     }
   };
 
-  console.log("ChatBot rendering now, isOpen:", isOpen, "connectionMode:", connectionMode); // Debug log
+  // Add event listener for viewport changes
+  useEffect(() => {
+    // Function to update window dimensions for mobile
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      
+      // Adjust chatbot position/size for mobile
+      const chatbotContainer = document.querySelector('.chatbot-container');
+      const chatWindow = document.querySelector('.chatbot-window');
+      
+      if (chatbotContainer && isMobile) {
+        chatbotContainer.style.bottom = '10px';
+        chatbotContainer.style.right = '10px';
+      } else if (chatbotContainer) {
+        chatbotContainer.style.bottom = '30px';
+        chatbotContainer.style.right = '30px';
+      }
+      
+      if (chatWindow && isMobile) {
+        chatWindow.style.width = `${Math.min(320, window.innerWidth - 20)}px`;
+      }
+    };
+
+    // Initial call and listener
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  // Fix for mobile browser issues with Event Source
+  const isEventSourceSupported = () => {
+    try {
+      return 'EventSource' in window && 
+        typeof window.EventSource === 'function' &&
+        navigator.onLine;
+    } catch (e) {
+      console.error("Error checking EventSource support:", e);
+      return false;
+    }
+  };
+
+  // Safe wrapper for checking connection
+  const safeCheckConnection = useCallback(async () => {
+    try {
+      await checkConnectionStatus();
+    } catch (error) {
+      console.error("Error during connection check:", error);
+      setConnectionMode('offline');
+    }
+  }, [checkConnectionStatus]);
+  
+  // Use safe connection check
+  useEffect(() => {
+    safeCheckConnection();
+    const intervalId = setInterval(safeCheckConnection, 30000);
+    return () => clearInterval(intervalId);
+  }, [safeCheckConnection]);
+
+  // Add keyboard handling for mobile
+  useEffect(() => {
+    // Function to handle visibility changes for keyboard
+    const handleKeyboardVisibility = () => {
+      // Check if keyboard might be visible (based on viewport height change)
+      const isMobile = window.innerWidth <= 768;
+      const isLandscape = window.innerWidth > window.innerHeight;
+      const isKeyboardOpen = isMobile && 
+        ((window.innerHeight < window.outerHeight * 0.75) || 
+         (isLandscape && window.innerHeight < 450));
+      
+      const chatWindow = document.querySelector('.chatbot-window');
+      const chatButton = document.querySelector('.chatbot-toggle');
+      
+      if (chatWindow && isKeyboardOpen) {
+        // If keyboard is likely visible, adjust the chatbot position
+        chatWindow.style.bottom = '10px';
+        chatWindow.style.height = '300px';
+        
+        if (chatButton) {
+          chatButton.style.bottom = '5px';
+          chatButton.style.right = '5px';
+          chatButton.style.opacity = '0.7';
+        }
+      } else if (chatWindow) {
+        // Reset to normal position
+        chatWindow.style.bottom = isMobile ? '70px' : '80px';
+        chatWindow.style.height = isMobile ? '450px' : '500px';
+        
+        if (chatButton) {
+          chatButton.style.bottom = isMobile ? '10px' : '30px';
+          chatButton.style.right = isMobile ? '10px' : '30px';
+          chatButton.style.opacity = '1';
+        }
+      }
+    };
+    
+    // Listen for resize events (keyboard opening/closing)
+    window.addEventListener('resize', handleKeyboardVisibility);
+    
+    // Listen for input focus/blur
+    const handleFocus = () => {
+      // On mobile, adjust chatbot position up when input is focused
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        setTimeout(() => {
+          const chatWindow = document.querySelector('.chatbot-window');
+          if (chatWindow) {
+            chatWindow.style.bottom = '10px';
+            chatWindow.style.height = '280px';
+            
+            // Scroll to keep input visible
+            window.scrollTo(0, 0);
+            inputRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 300);
+      }
+    };
+    
+    const handleBlur = () => {
+      // Reset position when input loses focus
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        setTimeout(() => {
+          const chatWindow = document.querySelector('.chatbot-window');
+          if (chatWindow) {
+            chatWindow.style.bottom = '70px';
+            chatWindow.style.height = '450px';
+          }
+        }, 300);
+      }
+    };
+    
+    if (inputRef.current) {
+      inputRef.current.addEventListener('focus', handleFocus);
+      inputRef.current.addEventListener('blur', handleBlur);
+    }
+    
+    // Initial check
+    handleKeyboardVisibility();
+    
+    return () => {
+      window.removeEventListener('resize', handleKeyboardVisibility);
+      if (inputRef.current) {
+        inputRef.current.removeEventListener('focus', handleFocus);
+        inputRef.current.removeEventListener('blur', handleBlur);
+      }
+    };
+  }, [isOpen]);
 
   return (
-    <div className="chatbot-container">
-      {/* Initial greeting bubble */}
+    <div className="chatbot-container"
+         // Add safety for notched phones
+         style={{
+           paddingBottom: 'env(safe-area-inset-bottom, 0)',
+           paddingRight: 'env(safe-area-inset-right, 0)'
+         }}>
+      {/* Greeting bubble */}
       {showGreeting && !isOpen && (
         <div className="chatbot-greeting" onClick={toggleChat}>
           <p>Need help? Ask me anything about our school!</p>
@@ -342,7 +642,7 @@ const ChatBot = () => {
         </div>
       )}
       
-      {/* Chat icon button */}
+      {/* Chat toggle button */}
       <button 
         className={`chatbot-toggle ${isOpen ? 'open' : ''}`} 
         onClick={toggleChat}
@@ -387,7 +687,7 @@ const ChatBot = () => {
                 <div className="message-content">
                   <p>
                     {connectionMode === 'offline' 
-                      ? "Hello! I'm currently in offline mode but can answer basic questions about our school."
+                      ? "Hello! I'm currently in offline mode. Make sure the Python server is running (python ollama_server.py)."
                       : "Hello! How can I help you today?"}
                   </p>
                 </div>
@@ -397,31 +697,19 @@ const ChatBot = () => {
             {/* Message history */}
             {messages.map((message, index) => (
               <div 
-                key={index} 
-                className={`chatbot-message ${message.sender} ${message.isError ? 'error' : ''} ${message.isFallback ? 'fallback' : ''}`}
+                key={message.id || index} 
+                className={`chatbot-message ${message.sender} ${message.isError ? 'error' : ''} ${message.isFallback ? 'fallback' : ''} ${message.isStreaming ? 'streaming' : ''}`}
               >
                 <div className="message-content">
                   <p>{message.text}</p>
                   <span className="message-time">
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     {message.isFallback && <span className="offline-indicator"> (offline)</span>}
+                    {message.isStreaming && <span className="streaming-indicator"> (typing...)</span>}
                   </span>
                 </div>
               </div>
             ))}
-            
-            {/* Loading indicator */}
-            {isLoading && (
-              <div className="chatbot-message bot loading">
-                <div className="message-content">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
-            )}
             
             {/* Scroll anchor */}
             <div ref={messagesEndRef} />
@@ -445,6 +733,9 @@ const ChatBot = () => {
             </div>
           )}
           
+          {/* Model selector - now hidden */}
+          {/* Removing the model selector as requested */}
+          
           {/* Input area */}
           <div className="chatbot-input">
             <input
@@ -459,7 +750,7 @@ const ChatBot = () => {
               ref={inputRef}
             />
             <button 
-              onClick={() => handleSendMessage()} 
+              onClick={(e) => sendMessage(e)} 
               disabled={isLoading || !input.trim()}
               aria-label="Send message"
             >

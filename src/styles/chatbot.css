@@ -308,18 +308,66 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .chatbot-window {
     width: 300px;
+    max-width: calc(100vw - 20px);
     bottom: 70px;
-    right: 0;
+    right: 10px;
     height: 450px;
+    max-height: calc(100vh - 100px);
   }
   
   .chatbot-toggle {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
+    width: 55px;
+    height: 55px;
+    font-size: 1.3rem;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .chatbot-input {
+    padding: 10px;
+  }
+
+  .chatbot-input input {
+    padding: 8px 10px;
+    font-size: 16px; /* Prevent zoom on focus in iOS */
+  }
+
+  .message-content p {
+    font-size: 0.9rem;
+  }
+
+  .chatbot-header {
+    padding: 10px 15px;
+  }
+
+  .chatbot-greeting {
+    max-width: 230px;
+    right: 10px;
+    bottom: 70px;
+  }
+
+  /* Ensure chatbot is above any other content */
+  .chatbot-container {
+    z-index: 9999;
+  }
+
+  /* Adjust message bubble size on mobile */
+  .chatbot-message {
+    max-width: 90%;
+  }
+
+  /* Better touch targets for buttons */
+  .chatbot-input button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .prompt-button {
+    padding: 8px 12px;
+    font-size: 0.9rem;
   }
 }
 
@@ -421,4 +469,62 @@
   color: #ff9800;
   font-style: italic;
   margin-left: 5px;
-} 
+}
+
+/* Streaming message styles */
+.chatbot-message.streaming .message-content {
+  animation: subtle-pulse 2s infinite;
+}
+
+@keyframes subtle-pulse {
+  0% {
+    box-shadow: 0 0 0 rgba(46, 139, 87, 0);
+  }
+  50% {
+    box-shadow: 0 0 5px rgba(46, 139, 87, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(46, 139, 87, 0);
+  }
+}
+
+.streaming-indicator {
+  font-size: 0.65rem;
+  color: var(--primary-color);
+  font-style: italic;
+  margin-left: 5px;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Add a blinking cursor and better typing animation for streaming messages */
+.chatbot-message.streaming .message-content p {
+  border-right: 2px solid var(--primary-color);
+  animation: blink-cursor 0.8s step-end infinite;
+  white-space: pre-wrap;
+}
+
+@keyframes blink-cursor {
+  from, to { border-color: transparent; }
+  50% { border-color: var(--primary-color); }
+}
+
+.streaming-indicator {
+  font-style: italic;
+  color: var(--primary-color);
+  animation: pulse-text 1.2s ease-in-out infinite;
+  margin-left: 5px;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}

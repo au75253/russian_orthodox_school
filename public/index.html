@@ -2,6 +2,7 @@
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <meta name="theme-color" content="#2E8B57" />
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
@@ -10,8 +11,169 @@
       content="Providing quality education based on Orthodox Christian values."
     />
     <title>Orthodox Christian Russian School</title>
+    
+    <!-- Error handling to prevent uncaught runtime errors -->
+    <script>
+      // Global error handler
+      window.addEventListener('error', function(event) {
+        console.log('Caught global error:', event.error);
+        // Prevent default error handling
+        event.preventDefault();
+        return true;
+      });
+      
+      // Unhandled promise rejection handler
+      window.addEventListener('unhandledrejection', function(event) {
+        console.log('Caught unhandled rejection:', event.reason);
+        // Prevent default error handling
+        event.preventDefault();
+        return true;
+      });
+      
+      // Define safe versions of problematic APIs
+      window.safeFetch = function() {
+        try {
+          return fetch.apply(this, arguments).catch(function(error) {
+            console.log('Fetch error caught:', error);
+            return Promise.reject(error);
+          });
+        } catch (e) {
+          console.log('Fetch call error:', e);
+          return Promise.reject(e);
+        }
+      };
+    </script>
+    
     <!-- Ensure Font Awesome is loaded -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- EventSource polyfill for older browsers -->
+    <script>
+      // Simple EventSource mobile compatability wrapper
+      (function() {
+        if (!window.EventSource || navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i)) {
+          console.log('Using EventSource compatability layer for mobile');
+          
+          // Replace the EventSource functionality for mobile
+          try {
+            window.originalEventSource = window.EventSource;
+            
+            // Mobile browsers have issues with SSE, using a safer approach
+            window.EventSource = function(url) {
+              var source = this;
+              var xhr = null;
+              var evtId = 0;
+              var interval = 1000; // Polling interval
+              var retry = 0;
+              var running = false;
+              
+              // Methods
+              this.onmessage = null;
+              this.onerror = null;
+              
+              // Safety polyfill for mobile
+              this.close = function() {
+                running = false;
+                if (xhr) {
+                  xhr.abort();
+                  xhr = null;
+                }
+                clearTimeout(retry);
+              };
+              
+              (function poll() {
+                running = true;
+                try {
+                  xhr = new XMLHttpRequest();
+                  xhr.open('GET', url, true);
+                  xhr.setRequestHeader('Accept', 'text/event-stream');
+                  xhr.setRequestHeader('Cache-Control', 'no-cache');
+                  
+                  xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                      if (xhr.status === 200) {
+                        // Success, process the response
+                        if (xhr.responseText && source.onmessage) {
+                          var data = { data: xhr.responseText };
+                          source.onmessage(data);
+                        }
+                        
+                        // Schedule next poll if still running
+                        if (running) {
+                          retry = setTimeout(poll, interval);
+                        }
+                      } else {
+                        // Error, maybe try again
+                        if (source.onerror) {
+                          source.onerror(new Error('XHR error: ' + xhr.status));
+                        }
+                        
+                        // Retry with backoff
+                        if (running) {
+                          interval = Math.min(interval * 1.5, 10000);
+                          retry = setTimeout(poll, interval);
+                        }
+                      }
+                    }
+                  };
+                  
+                  xhr.onerror = function() {
+                    if (source.onerror) {
+                      source.onerror(new Error('Network error'));
+                    }
+                    
+                    if (running) {
+                      interval = Math.min(interval * 1.5, 10000);
+                      retry = setTimeout(poll, interval);
+                    }
+                  };
+                  
+                  xhr.send();
+                } catch (e) {
+                  console.error("EventSource polyfill error:", e);
+                  if (source.onerror) {
+                    try {
+                      source.onerror(e);
+                    } catch (handlerError) {
+                      console.error("Error in onerror handler:", handlerError);
+                    }
+                  }
+                  
+                  if (running) {
+                    retry = setTimeout(poll, interval);
+                  }
+                }
+              })();
+            };
+          } catch (e) {
+            console.error("Failed to replace EventSource:", e);
+            // Provide an empty stub for EventSource if replacement fails
+            window.EventSource = function() {
+              this.close = function() {};
+              this.onmessage = null;
+              this.onerror = null;
+            };
+          }
+        }
+      })();
+    </script>
+    
+    <!-- Additional mobile compatibility fixes -->
+    <script>
+      // Fix for weird mobile browser behavior
+      document.addEventListener('DOMContentLoaded', function() {
+        // Focus/blur handling to help with keyboard issues
+        var inputs = document.querySelectorAll('input, textarea');
+        for (var i = 0; i < inputs.length; i++) {
+          inputs[i].addEventListener('focus', function() {
+            // Scroll to input when it gets focus
+            setTimeout(function() {
+              window.scrollTo(0, 0);
+            }, 300);
+          });
+        }
+      });
+    </script>
     
     <!-- Fallback chatbot style -->
     <style>
@@ -56,6 +218,17 @@
       /* Add hover effect */
       #fallback-chatbot:hover {
         background-color: #3aa76d;
+      }
+      
+      /* Mobile specific fixes */
+      @media (max-width: 768px) {
+        #fallback-chatbot {
+          width: 55px;
+          height: 55px;
+          bottom: 15px;
+          right: 15px;
+          font-size: 1.6rem;
+        }
       }
     </style>
   </head>

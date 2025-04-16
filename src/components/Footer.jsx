@@ -13,7 +13,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer>
+    <footer className="safe-area-bottom">
       <div className="footer-container">
         <div className="footer-links">
           <a href="/">{t('nav_home')}</a>
@@ -33,7 +33,9 @@ const Footer = () => {
           <a href="https://instagram.com" aria-label="Instagram">
             <i data-feather="instagram"></i>
           </a>
-          <span className="copyright">© {currentYear} {t('home_title')}. {t('footer_rights')}</span>
+        </div>
+        <div className="copyright-wrapper">
+          <p className="copyright">© {currentYear} {t('home_title')}. {t('footer_rights')}</p>
         </div>
       </div>
     </footer>

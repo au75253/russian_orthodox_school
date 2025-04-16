@@ -19,7 +19,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "node": "^22.11.0",
+    "node-fetch": "^2.7.0",
     "nodemailer": "^6.10.1",
+    "ollama": "^0.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^15.1.0",
@@ -28,16 +30,24 @@
     "web-vitals": "^2.1.4",
     "workbox-core": "^7.3.0",
     "workbox-precaching": "^7.3.0",
-    "workbox-routing": "^7.3.0"
+    "workbox-routing": "^7.3.0",
+    "kill-port": "^2.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "server": "node server/server.js",
+    "dev": "kill-port 3009 || true && concurrently \"npm run server\" \"PORT=3009 npm run start\"",
+    "dev:win": "kill-port 3009 || true && concurrently \"npm run server\" \"set PORT=3009 && npm run start\"",
+    "ollama": "cd server/python && ./start_ollama_server.sh",
+    "ollama:win": "cd server/python && start_ollama_server.bat",
+    "dev:all": "concurrently \"npm run ollama\" \"npm run dev\"",
+    "dev:all:win": "concurrently \"npm run ollama:win\" \"npm run dev:win\"",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node server/server.js",
-    "dev": "concurrently \"npm run start\" \"npm run server\"",
-    "install-server": "npm install express mongoose dotenv cors helmet express-rate-limit express-validator bcrypt jsonwebtoken nodemailer concurrently"
+    "install-server": "npm install express mongoose dotenv cors helmet express-rate-limit express-validator bcrypt jsonwebtoken nodemailer concurrently",
+    "install-ollama": "cd server/python && python -m venv venv && source venv/bin/activate && pip install -r ollama_api/requirements.txt",
+    "install-ollama:win": "cd server/python && python -m venv venv && venv\\Scripts\\activate.bat && pip install -r ollama_api/requirements.txt"
   },
   "eslintConfig": {
     "extends": [
@@ -61,5 +71,8 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
 }

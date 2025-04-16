@@ -8,6 +8,7 @@ import ChatBot from './components/ChatBot';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './styles/chatbot.css'; // Import chatbot styles
+import './styles/mobile.css'; // Import mobile-specific styles
 
 // Pages
 import Home from './pages/Home';
@@ -42,28 +43,44 @@ function App() {
       console.error("Failed to set reactLoaded flag:", e);
     }
 
+    // Add a class to body for mobile detection
+    const checkMobile = () => {
+      if (window.innerWidth <= 768) {
+        document.body.classList.add('is-mobile');
+      } else {
+        document.body.classList.remove('is-mobile');
+      }
+    };
+    
+    // Check on load and resize
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
     return () => {
       // Clean up
       document.head.removeChild(link);
+      window.removeEventListener('resize', checkMobile);
     };
   }, []);
 
   return (
     <Router>
-      <Header />
-      <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/teachers" element={<Teachers />} />
-          <Route path="/policies" element={<Policies />} />
-          <Route path="/lessons" element={<Lessons />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
-      </main>
-      <Footer />
-      {/* Only use the main ChatBot */}
-      <ChatBot />
+      <div className="safe-area-top">
+        <Header />
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/teachers" element={<Teachers />} />
+            <Route path="/policies" element={<Policies />} />
+            <Route path="/lessons" element={<Lessons />} />
+            <Route path="/contact" element={<Contact />} />
+          </Routes>
+        </main>
+        <Footer />
+        {/* Only use the main ChatBot */}
+        <ChatBot />
+      </div>
     </Router>
   );
 }

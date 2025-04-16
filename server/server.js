@@ -10,16 +10,19 @@ const { Ollama } = require('ollama');
 
 // Initialize express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 5000; // Explicitly use port 5000
 
 // Security middleware
-app.use(helmet()); // Set security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+})); // Set security headers with adjusted policy for resources
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://stnicholasorthodoxschool.org' // Production domain
-    : 'http://localhost:3000', // Development
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+    : ['http://localhost:3000', 'http://localhost:3009'], // Development - support both ports
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // Request parsing
@@ -45,8 +48,13 @@ const checkOllama = async () => {
   }
 };
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/orthodox_school')
+mongoose.connect('mongodb://localhost:27017/orthodox_school')
   .then(() => console.log('MongoDB connected'))
   .catch(err => {
     console.error('MongoDB connection error:', err);

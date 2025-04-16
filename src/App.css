@@ -36,3 +36,96 @@
     transform: rotate(360deg);
   }
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  /* Fix header layout on mobile */
+  header {
+    padding: 10px;
+  }
+  
+  /* Adjust logo size */
+  .logo img {
+    max-width: 80px;
+  }
+  
+  /* Improve readability of text on small screens */
+  p, li, h1, h2, h3 {
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+  
+  /* Ensure images don't overflow on mobile */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Adjust section padding */
+  section {
+    padding: 30px 15px;
+  }
+  
+  /* Make buttons easier to tap */
+  button, .button, a.button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 15px;
+  }
+  
+  /* Reduce excessive margins */
+  .container {
+    padding: 0 15px;
+  }
+  
+  /* Fix any overflow issues */
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  /* Ensure form elements are properly sized */
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on focus in iOS */
+    max-width: 100%;
+  }
+  
+  /* Fix possible zoom issues on inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  textarea {
+    font-size: 16px;
+  }
+  
+  /* Adjust navigation for mobile */
+  nav ul {
+    gap: 10px;
+  }
+  
+  /* Fix footer on mobile */
+  footer {
+    padding: 20px 15px;
+  }
+  
+  /* Adjust grid layouts */
+  .grid, .grid-container, [class*="grid-"] {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  /* Ensure hero sections are properly sized */
+  .hero {
+    min-height: auto;
+    padding: 50px 15px;
+  }
+  
+  /* Fix long words breaking layout */
+  * {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}

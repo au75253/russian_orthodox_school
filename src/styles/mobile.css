@@ -1,0 +1,111 @@
+/* Mobile-specific styles for Russian Orthodox School website */
+
+/* Improved mobile navigation dropdown */
+@media (max-width: 768px) {
+  /* Better hamburger menu */
+  .navbar-toggler, 
+  button[aria-controls="navbarNav"] {
+    padding: 10px;
+    border-radius: 5px;
+    border: none !important;
+    background-color: rgba(46, 139, 87, 0.1);
+    transition: background-color 0.3s;
+  }
+
+  .navbar-toggler:hover,
+  button[aria-controls="navbarNav"]:hover {
+    background-color: rgba(46, 139, 87, 0.2);
+  }
+
+  /* Dropdown menu */
+  .navbar-collapse, 
+  .collapse.show,
+  .navbar-nav {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 10px 0;
+    margin-top: 10px;
+    max-height: 80vh; /* Limit height */
+    overflow-y: auto; /* Allow scrolling if needed */
+  }
+
+  /* Dropdown menu items */
+  .navbar-nav .nav-item {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .navbar-nav .nav-item:last-child {
+    border-bottom: none;
+  }
+
+  .navbar-nav .nav-link {
+    padding: 12px 20px !important;
+    font-size: 16px;
+  }
+
+  /* Active nav item */
+  .navbar-nav .nav-item.active,
+  .navbar-nav .nav-link.active {
+    background-color: rgba(46, 139, 87, 0.1);
+    font-weight: bold;
+  }
+
+  /* Fix footer copyright text */
+  footer {
+    padding: 20px 15px;
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 14px;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal; /* Allow wrapping */
+    word-break: break-word; /* Handle long words */
+    max-width: 100%;
+    padding: 0 10px;
+  }
+
+  /* Fix social icons on mobile */
+  footer .social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px 0;
+  }
+
+  /* Adjust chatbot position when keyboard is open */
+  @media screen and (max-height: 450px) {
+    .chatbot-window {
+      bottom: 10px;
+      height: 300px;
+      width: 280px;
+    }
+
+    .chatbot-toggle {
+      bottom: 5px;
+      right: 5px;
+      width: 45px;
+      height: 45px;
+    }
+  }
+
+  /* Ensure keyboard doesn't block the chatbot input */
+  .chatbot-window {
+    position: fixed;
+    top: auto;
+    bottom: 80px;
+    transition: bottom 0.3s ease;
+  }
+
+  /* Fix header for screens with notches/punch holes */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+} 
