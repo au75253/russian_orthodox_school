@@ -1,70 +1,130 @@
-# Getting Started with Create React App
+# St. Nicholas Russian Orthodox School Website
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is a website for St. Nicholas Russian Orthodox School with a fully functional contact form system.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Multilingual support (English and Russian)
+- Responsive design
+- Secure contact form with backend storage
+- Admin notification emails for new messages
+- Spam protection and rate limiting
+- Form validation
+- Ollama-powered AI chatbot using the official Ollama JavaScript library
 
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js (v14 or newer)
+- MongoDB (local or Atlas)
+- Ollama for the chatbot functionality (optional)
 
-### `npm test`
+### Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Clone the repository
+   ```bash
+   git clone <repository-url>
+   cd russian_orthodox_school
+   ```
 
-### `npm run build`
+2. Install dependencies
+   ```bash
+   npm install
+   npm run install-server
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. Create environment variables
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Then edit the `.env` file with your MongoDB connection string and email settings.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Setting up Ollama for the Chatbot
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The chatbot functionality is powered by [Ollama](https://ollama.ai/), an open-source LLM runner, using the official [Ollama JavaScript library](https://ollama.com/blog/python-javascript-libraries):
 
-### `npm run eject`
+1. Install Ollama by following the instructions at [https://ollama.ai/download](https://ollama.ai/download)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+2. Pull a model (we recommend Llama2 to start):
+   ```bash
+   ollama pull llama2
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+3. Start the Ollama service:
+   ```bash
+   ollama serve
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+4. The chatbot will automatically connect to the Ollama service on the default port (11434).
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Running the Application
 
-## Learn More
+For development (React frontend + Express backend):
+```bash
+npm run dev
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+For frontend only:
+```bash
+npm start
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+For backend only:
+```bash
+npm run server
+```
 
-### Code Splitting
+## Production Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. Build the React application
+   ```bash
+   npm run build
+   ```
 
-### Analyzing the Bundle Size
+2. Set environment variables on your hosting provider:
+   - `NODE_ENV=production`
+   - `MONGODB_URI=your_mongodb_connection_string`
+   - `EMAIL_*` variables for email notifications
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+3. Start the server
+   ```bash
+   npm run server
+   ```
 
-### Making a Progressive Web App
+## Contact Form Security Features
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+The contact form includes several security measures:
 
-### Advanced Configuration
+- Input validation and sanitization
+- Rate limiting (5 submissions per hour per IP)
+- CSRF protection through proper headers
+- Spam detection based on content analysis
+- Data validation on both client and server
+- XSS protection through input escaping
+- Proper error handling and logging
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Database Structure
 
-### Deployment
+Contact messages are stored in MongoDB with the following schema:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- `name`: Sender's name
+- `email`: Sender's email
+- `phone`: Sender's phone (optional)
+- `subject`: Message subject
+- `message`: Message content
+- `ipAddress`: Sender's IP address (for security)
+- `userAgent`: Sender's browser info (for security)
+- `status`: Message status (unread, read, replied, spam, archived)
+- `adminNotes`: Notes added by administrators
+- `createdAt`: Timestamp when the message was received
+- `updatedAt`: Timestamp when the message was last updated
 
-### `npm run build` fails to minify
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is private and proprietary.
+
+## Contact
+
+For inquiries about this website, please contact the school administration.
