@@ -17,6 +17,7 @@
     "helmet": "^8.1.0",
     "i18next": "^23.16.4",
     "jsonwebtoken": "^9.0.2",
+    "kill-port": "^2.0.1",
     "mongoose": "^8.13.2",
     "node": "^22.11.0",
     "node-fetch": "^2.7.0",
@@ -30,8 +31,7 @@
     "web-vitals": "^2.1.4",
     "workbox-core": "^7.3.0",
     "workbox-precaching": "^7.3.0",
-    "workbox-routing": "^7.3.0",
-    "kill-port": "^2.0.1"
+    "workbox-routing": "^7.3.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -45,6 +45,7 @@
     "ollama:win": "cd server/python && start_ollama_server.bat",
     "dev:all": "concurrently \"npm run ollama\" \"npm run dev\"",
     "dev:all:win": "concurrently \"npm run ollama:win\" \"npm run dev:win\"",
+    "serve-static": "node server.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "install-server": "npm install express mongoose dotenv cors helmet express-rate-limit express-validator bcrypt jsonwebtoken nodemailer concurrently",

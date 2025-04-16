@@ -3,6 +3,115 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    
+    <!-- Telegram browser compatibility script - must run first -->
+    <script>
+      // Detect Telegram WebApp or in-app browser
+      window.isTelegramBrowser = (navigator.userAgent.indexOf('Telegram') !== -1) || 
+                                (window.Telegram !== undefined) || 
+                                (window.TelegramWebviewProxy !== undefined);
+      
+      if (window.isTelegramBrowser) {
+        console.log("Telegram browser detected - applying compatibility fixes");
+        
+        // Force simple rendering mode for Telegram
+        document.documentElement.classList.add('telegram-browser');
+        
+        // Disable problematic features in Telegram
+        window.addEventListener('DOMContentLoaded', function() {
+          // Disable animations in Telegram browser
+          var style = document.createElement('style');
+          style.textContent = `
+            /* Disable animations in Telegram browser */
+            .telegram-browser * {
+              animation: none !important;
+              transition: none !important;
+            }
+            
+            /* Fix z-index issues */
+            .telegram-browser .chatbot-container,
+            .telegram-browser .chatbot-toggle {
+              position: fixed !important;
+              z-index: 9999 !important;
+            }
+            
+            /* Use simpler layout for Telegram */
+            .telegram-browser .error-container {
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
+              bottom: 0 !important;
+              z-index: 99999 !important;
+              background: rgba(255,255,255,0.95) !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              padding: 20px !important;
+            }
+          `;
+          document.head.appendChild(style);
+        });
+        
+        // Patch problematic functions
+        // Replace EventSource completely for Telegram
+        window.EventSource = function() {
+          console.log("EventSource disabled in Telegram browser");
+          this.close = function() {};
+          this.onmessage = null;
+          this.onerror = null;
+        };
+        
+        // Create safe localStorage wrapper
+        var originalLocalStorage = window.localStorage;
+        try {
+          window.localStorage = {
+            getItem: function(key) {
+              try {
+                return originalLocalStorage.getItem(key);
+              } catch (e) {
+                console.error("localStorage.getItem error:", e);
+                return null;
+              }
+            },
+            setItem: function(key, value) {
+              try {
+                return originalLocalStorage.setItem(key, value);
+              } catch (e) {
+                console.error("localStorage.setItem error:", e);
+              }
+            },
+            removeItem: function(key) {
+              try {
+                return originalLocalStorage.removeItem(key);
+              } catch (e) {
+                console.error("localStorage.removeItem error:", e);
+              }
+            }
+          };
+        } catch (e) {
+          console.error("Failed to patch localStorage:", e);
+        }
+        
+        // Override setTimeout to handle Telegram quirks
+        var originalSetTimeout = window.setTimeout;
+        window.setTimeout = function(fn, delay) {
+          try {
+            return originalSetTimeout(fn, delay || 10);
+          } catch (e) {
+            console.error("setTimeout error:", e);
+            // Try immediate execution as fallback
+            try {
+              fn();
+            } catch (e2) {
+              console.error("setTimeout fallback error:", e2);
+            }
+            return 0;
+          }
+        };
+      }
+    </script>
+    
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <meta name="theme-color" content="#2E8B57" />
     <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
@@ -231,6 +340,27 @@
         }
       }
     </style>
+    
+    <!-- Polyfills for older browsers (especially mobile) -->
+    <script>
+      // Polyfill for Promise
+      if (typeof Promise === 'undefined') {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"><\/script>');
+      }
+      
+      // Polyfill for fetch
+      if (typeof fetch === 'undefined') {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.min.js"><\/script>');
+      }
+
+      // Handle uncaught errors
+      window.addEventListener('error', function(e) {
+        console.error('Uncaught error:', e.error || e.message);
+        // Prevent default browser error handling, our ErrorBoundary will handle it
+        e.preventDefault();
+        return true;
+      });
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

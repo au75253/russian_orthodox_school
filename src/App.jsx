@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ChatBot from './components/ChatBot';
+import ErrorBoundary from './components/ErrorBoundary';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import './styles/chatbot.css'; // Import chatbot styles
@@ -66,20 +67,25 @@ function App() {
   return (
     <Router>
       <div className="safe-area-top">
-        <Header />
+        <ErrorBoundary>
+          <Header />
+        </ErrorBoundary>
         <main>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/teachers" element={<Teachers />} />
-            <Route path="/policies" element={<Policies />} />
-            <Route path="/lessons" element={<Lessons />} />
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/" element={<ErrorBoundary><Home /></ErrorBoundary>} />
+            <Route path="/about" element={<ErrorBoundary><About /></ErrorBoundary>} />
+            <Route path="/teachers" element={<ErrorBoundary><Teachers /></ErrorBoundary>} />
+            <Route path="/policies" element={<ErrorBoundary><Policies /></ErrorBoundary>} />
+            <Route path="/lessons" element={<ErrorBoundary><Lessons /></ErrorBoundary>} />
+            <Route path="/contact" element={<ErrorBoundary><Contact /></ErrorBoundary>} />
           </Routes>
         </main>
-        <Footer />
-        {/* Only use the main ChatBot */}
-        <ChatBot />
+        <ErrorBoundary>
+          <Footer />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <ChatBot />
+        </ErrorBoundary>
       </div>
     </Router>
   );
