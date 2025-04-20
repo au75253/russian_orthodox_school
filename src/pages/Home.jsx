@@ -8,24 +8,23 @@ import Hero from '../components/Hero';
 function Home() {
   const { t } = useTranslation();
 
-  // Added direct content instead of relying solely on translation keys
-  // This will allow the site to display content even if translations aren't fully set up
+  // Updated with actual school information
   const content = {
     welcome: {
-      title: "Welcome to St. Nicholas Russian Orthodox School",
-      message: "We are dedicated to providing a nurturing environment where students can develop academically, spiritually, and personally. Our school combines rigorous academic standards with Orthodox Christian values to help students grow into well-rounded individuals."
+      title: "Welcome to St. Aiden & Chad Russian Orthodox School",
+      message: "We are dedicated to providing a nurturing environment where students can develop academically, spiritually, and personally. Our school combines Russian language education with Orthodox Christian values to help students grow into well-rounded individuals."
     },
     about: {
       title: "About Our School",
-      description: "Founded in 2010, St. Nicholas Russian Orthodox School serves the community by offering quality education rooted in Orthodox Christian traditions. We maintain small class sizes to ensure personalized attention and create a family-like atmosphere where each student is valued."
+      description: "Founded in 2024, St. Aiden & Chad Russian Orthodox School serves the Nottingham community by offering quality education rooted in Orthodox Christian traditions. We maintain small class sizes to ensure personalized attention and create a family-like atmosphere where each student is valued."
     },
     teachers: {
       title: "Our Dedicated Teachers",
-      description: "Our faculty consists of experienced educators who are passionate about teaching and committed to the spiritual and academic growth of each student. They serve as mentors and role models, guiding students in their educational journey."
+      description: "Our faculty consists of experienced educators who are passionate about teaching and committed to the spiritual and academic growth of each student. Our teachers are experts in Russian language, literature, music, and Orthodox studies."
     },
     lessons: {
       title: "Our Curriculum",
-      description: "We offer a comprehensive curriculum that includes standard academic subjects along with religious education, Russian language and culture. Our teaching approach emphasizes critical thinking, creativity, and practical application of knowledge."
+      description: "We offer a focused curriculum that includes Russian language, Russian literature, music, and Закон Божий (Law of God). Our teaching approach emphasizes cultural connection, creativity, and practical application of knowledge."
     }
   };
 

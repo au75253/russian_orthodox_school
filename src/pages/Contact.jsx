@@ -19,15 +19,15 @@ function Contact() {
     message: ''
   });
 
-  // Added actual content for the contact page
+  // Updated with actual contact information
   const contactContent = {
     title: "Contact Us",
     description: "We welcome your inquiries and look forward to connecting with you. Please use the contact information below or fill out the form, and we will respond promptly.",
     info: {
-      address: "123 Orthodox Way, San Francisco, CA 94123",
-      phone: "(415) 555-1234",
-      email: "info@stnicholasorthodoxschool.org",
-      hours: "Monday - Friday: 8:00 AM - 4:00 PM"
+      address: "Carlton Hill, Carlton, Nottingham NG4 1EE, United Kingdom",
+      phone: "+447756023112",
+      email: "info@staidenchadrussianschool.org",
+      hours: "Sunday: 11:30 AM - 3:30 PM"
     }
   };
 

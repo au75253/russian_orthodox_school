@@ -6,46 +6,46 @@ import { useTranslation } from 'react-i18next';
 function Lessons() {
   const { t } = useTranslation();
 
-  // Added actual content for the lessons page
+  // Updated with actual curriculum information
   const lessonsContent = {
     title: "Our Curriculum",
-    description: "At St. Nicholas Russian Orthodox School, we offer a comprehensive curriculum that combines academic excellence with Orthodox Christian values and Russian language and cultural education.",
+    description: "At St. Aiden & Chad Russian Orthodox School in Nottingham, we offer a focused curriculum that emphasizes Russian language, culture, and Orthodox Christian education.",
     courses: [
       {
-        title: "Orthodox Christian Studies",
-        description: "Students learn about Orthodox Christian faith, traditions, and practices through age-appropriate lessons, prayer, and participation in services.",
-        grades: "All grades",
-        schedule: "Twice weekly"
+        title: "Закон Божий (Law of God)",
+        description: "Students learn about Orthodox Christian faith, traditions, and practices through age-appropriate lessons, prayer, and participation in services. Taught by Alexander Ushakov, a graduate of St. Tikhon University in Moscow.",
+        grades: "All ages",
+        schedule: "Weekly"
       },
       {
-        title: "Russian Language",
-        description: "Our Russian language program develops reading, writing, speaking, and comprehension skills for students at all levels of proficiency.",
-        grades: "All grades",
-        schedule: "Daily"
+        title: "Russian Language (Younger Students)",
+        description: "Our beginning Russian language program develops reading, writing, speaking, and comprehension skills for younger students. Taught by Alina, who specializes in making language acquisition engaging for young learners.",
+        grades: "Ages 4-7",
+        schedule: "Weekly"
       },
       {
-        title: "Russian Literature and Culture",
-        description: "Students explore Russian literary classics, history, traditions, and cultural practices to develop a deep appreciation for their heritage.",
-        grades: "Grades 3-12",
-        schedule: "Three times weekly"
+        title: "Russian Language (Middle Students)",
+        description: "Middle-level Russian language instruction builds upon the foundations with more advanced grammar, vocabulary, and conversation skills. Taught by Lydia Mikhalovna, who brings over 40 years of teaching experience.",
+        grades: "Ages 8-12",
+        schedule: "Weekly"
       },
       {
-        title: "Mathematics",
-        description: "Our mathematics curriculum emphasizes problem-solving, logical reasoning, and application of mathematical concepts to real-world situations.",
-        grades: "All grades",
-        schedule: "Daily"
+        title: "Russian Language (Older Students)",
+        description: "Advanced Russian language study for older students, focusing on complex grammar, extensive vocabulary, and fluent conversation. Taught by Tatyana Ball, who specializes in higher-level language instruction.",
+        grades: "Ages 13+",
+        schedule: "Weekly"
       },
       {
-        title: "Science",
-        description: "Students engage in hands-on scientific inquiry, experiments, and research projects across biology, chemistry, physics, and environmental science.",
-        grades: "All grades",
-        schedule: "Three times weekly"
+        title: "Russian Literature",
+        description: "Students explore Russian literary classics, poetry, and cultural texts appropriate to their age and language level. Our three Russian language teachers lead literature components appropriate to each age group.",
+        grades: "All ages",
+        schedule: "Weekly"
       },
       {
-        title: "English Language Arts",
-        description: "Our English program develops reading, writing, speaking, and listening skills through literature study, composition, grammar, and vocabulary development.",
-        grades: "All grades",
-        schedule: "Daily"
+        title: "Music - Solfège",
+        description: "Our unique music program teaches children musical fundamentals through Solfège instruction using engaging storytelling and creative props. Taught by Alla Ushakova, who has over 20 years of experience with this method.",
+        grades: "Ages 4-10",
+        schedule: "Weekly"
       }
     ]
   };

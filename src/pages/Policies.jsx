@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 function Policies() {
   const { t } = useTranslation();
 
-  // Added actual content for the policies page
+  // Updated content for the policies page with correct school hours
   const policiesContent = {
     title: "School Policies",
     description: "Our school policies are designed to create a safe, respectful, and productive learning environment that supports both academic excellence and spiritual growth.",
@@ -14,8 +14,8 @@ function Policies() {
       {
         title: "Attendance Policy",
         items: [
-          "Students are expected to arrive on time for all classes. School begins at 8:30 AM.",
-          "Parents must notify the school office by 9:00 AM if a student will be absent.",
+          "Students are expected to arrive on time for all classes. School begins at 11:30 AM on Sundays.",
+          "Parents must notify the school office by 10:00 AM if a student will be absent.",
           "Extended absences require prior approval from the school administration.",
           "Regular attendance is essential for academic success and continued enrollment."
         ]

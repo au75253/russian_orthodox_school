@@ -1,63 +1,117 @@
 /* Mobile-specific styles for Russian Orthodox School website */
 
+/* Prevent horizontal scrolling */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
+  position: relative;
+}
+
 /* Improved mobile navigation dropdown */
 @media (max-width: 768px) {
   /* Better hamburger menu */
   .navbar-toggler, 
-  button[aria-controls="navbarNav"] {
+  button[aria-controls="navbarNav"],
+  .nav-toggle {
     padding: 10px;
     border-radius: 5px;
     border: none !important;
     background-color: rgba(46, 139, 87, 0.1);
     transition: background-color 0.3s;
+    z-index: 1001;
   }
 
   .navbar-toggler:hover,
-  button[aria-controls="navbarNav"]:hover {
+  button[aria-controls="navbarNav"]:hover,
+  .nav-toggle:hover {
     background-color: rgba(46, 139, 87, 0.2);
   }
 
-  /* Dropdown menu */
+  /* Dropdown menu - improved styling */
   .navbar-collapse, 
   .collapse.show,
-  .navbar-nav {
+  .navbar-nav,
+  .nav {
     background-color: white;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 10px 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    padding: 15px 0;
     margin-top: 10px;
     max-height: 80vh; /* Limit height */
     overflow-y: auto; /* Allow scrolling if needed */
+    width: 100%;
+  }
+
+  .header.nav-open .nav {
+    display: block;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: 0;
+    margin-top: 0;
   }
 
   /* Dropdown menu items */
-  .navbar-nav .nav-item {
+  .navbar-nav .nav-item,
+  .nav ul li {
     border-bottom: 1px solid #f0f0f0;
+    padding: 0;
+    margin: 0;
   }
 
-  .navbar-nav .nav-item:last-child {
+  .navbar-nav .nav-item:last-child,
+  .nav ul li:last-child {
     border-bottom: none;
   }
 
-  .navbar-nav .nav-link {
-    padding: 12px 20px !important;
+  .navbar-nav .nav-link,
+  .nav ul li a {
+    padding: 15px 20px !important;
     font-size: 16px;
+    display: block;
+    width: 100%;
+    text-align: left;
   }
 
   /* Active nav item */
   .navbar-nav .nav-item.active,
-  .navbar-nav .nav-link.active {
+  .navbar-nav .nav-link.active,
+  .nav ul li a.active {
     background-color: rgba(46, 139, 87, 0.1);
     font-weight: bold;
   }
 
-  /* Fix footer copyright text */
+  .nav ul {
+    display: block;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+  }
+
+  /* Completely fix footer visibility issue */
   footer {
     padding: 20px 15px;
     text-align: center;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
   }
 
-  footer p {
+  footer .footer-container {
+    padding: 10px;
+    width: 100%;
+  }
+
+  footer p,
+  .copyright {
     font-size: 14px;
     margin: 0;
     overflow: hidden;
@@ -65,15 +119,38 @@
     white-space: normal; /* Allow wrapping */
     word-break: break-word; /* Handle long words */
     max-width: 100%;
-    padding: 0 10px;
+    padding: 0;
+    line-height: 1.5;
+    box-sizing: border-box;
+  }
+
+  .copyright-wrapper {
+    width: 100%;
+    margin-top: 15px;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
   }
 
   /* Fix social icons on mobile */
-  footer .social-icons {
+  .footer-social {
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 20px;
     margin: 15px 0;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .footer-links a {
+    margin: 5px;
   }
 
   /* Adjust chatbot position when keyboard is open */

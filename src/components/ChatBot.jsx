@@ -622,6 +622,15 @@ const ChatBot = () => {
     };
   }, [isOpen]);
 
+  // Hide chatbot on mobile devices
+  const isMobileDevice = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Return null (don't render) on mobile devices
+  if (isMobileDevice) {
+    console.log("Chatbot disabled on mobile device");
+    return null; 
+  }
+
   return (
     <div className="chatbot-container"
          // Add safety for notched phones

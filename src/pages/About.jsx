@@ -7,21 +7,21 @@ import aboutImage from '../assets/images/about.jpg'; // Place your image in this
 function About() {
   const { t } = useTranslation();
 
-  // Added direct content for the about page
+  // Updated with actual school information
   const aboutContent = {
     title: "About Our School",
-    description: "St. Nicholas Russian Orthodox School was established to provide quality education in a nurturing Orthodox Christian environment. We strive to develop well-rounded students who excel academically while growing in their faith and understanding of Russian Orthodox traditions.",
+    description: "St. Aiden & Chad Russian Orthodox School in Nottingham was established in 2024 to provide quality education in Russian language, literature, music, and Orthodox studies. We are associated with the Nottingham Russian Orthodox Church of St. Aiden & Chad, creating a strong community of faith and education.",
     mission: {
       title: "Our Mission",
-      description: "Our mission is to educate students in a supportive environment that fosters academic excellence, spiritual growth, and community engagement. We aim to cultivate a love for learning, respect for tradition, and a strong moral foundation that will guide our students throughout their lives."
+      description: "Our mission is to educate students in a supportive environment that fosters Russian language fluency, spiritual growth, and cultural appreciation. We aim to cultivate a love for learning, respect for Orthodox traditions, and a strong moral foundation that will guide our students throughout their lives."
     },
     values: {
       title: "Our Values",
       items: [
-        "Faith and Spirituality - We nurture the Orthodox Christian faith as the foundation of all aspects of our educational approach",
-        "Academic Excellence - We uphold high academic standards and encourage intellectual curiosity and critical thinking",
-        "Community and Service - We foster a sense of community within our school and encourage service to others",
-        "Respect and Integrity - We value personal integrity, mutual respect, and responsibility toward self and others"
+        "Faith and Spirituality - We nurture the Orthodox Christian faith as the foundation of our educational approach",
+        "Russian Language and Heritage - We are committed to teaching authentic Russian language and preserving cultural heritage",
+        "Musical Education - We believe in the power of music education through our specialized Solfège teaching method",
+        "Community and Service - We foster a sense of community within our school and the broader Russian Orthodox community in Nottingham"
       ]
     }
   };

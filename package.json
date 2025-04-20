@@ -2,6 +2,7 @@
   "name": "russian_orthodox_school",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://au75253.github.io",
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -47,6 +48,8 @@
     "dev:all:win": "concurrently \"npm run ollama:win\" \"npm run dev:win\"",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -b main -d build",
     "install-server": "npm install express mongoose dotenv cors helmet express-rate-limit express-validator bcrypt jsonwebtoken nodemailer concurrently",
     "install-ollama": "cd server/python && python -m venv venv && source venv/bin/activate && pip install -r ollama_api/requirements.txt",
     "install-ollama:win": "cd server/python && python -m venv venv && venv\\Scripts\\activate.bat && pip install -r ollama_api/requirements.txt"
