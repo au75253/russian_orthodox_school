@@ -200,6 +200,54 @@ After the build is complete run this command to load in the llm model
 docker exec russian_orthodox_school-ollama-1 ollama pull llama3.2:1b
 ```
 
+## Troubleshooting Docker Deployment
+
+If you experience issues with the Docker deployment, try these solutions:
+
+### Contact Form "Failed to fetch" Error
+
+1. Make sure all containers are running:
+   ```bash
+   docker ps
+   ```
+
+2. Check for error messages in the application container:
+   ```bash
+   docker logs russian_orthodox_school-app-1
+   ```
+
+3. Verify MongoDB is running and accessible:
+   ```bash
+   docker exec russian_orthodox_school-app-1 node -e "const mongoose = require('mongoose'); mongoose.connect('mongodb://mongodb:27017/orthodox_school').then(() => console.log('Success!')).catch(err => console.error(err))"
+   ```
+
+4. If the contact form still fails, rebuild all containers with:
+   ```bash
+   ./rebuild-docker.sh
+   ```
+
+5. For debugging network issues between containers:
+   ```bash
+   docker network inspect app_network
+   ```
+
+### Chatbot Offline Issues
+
+1. Ensure the Ollama model is properly pulled:
+   ```bash
+   docker exec russian_orthodox_school-ollama-1 ollama list
+   ```
+
+2. Check Python server logs:
+   ```bash
+   docker logs russian_orthodox_school-python-ollama-1
+   ```
+
+3. Restart just the Ollama-related services:
+   ```bash
+   docker-compose restart ollama python-ollama
+   ```
+
 ## Production Deployment
 
 1. Build the React application

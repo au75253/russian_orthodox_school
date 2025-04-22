@@ -105,17 +105,24 @@ function Contact() {
     setIsSubmitting(true);
     
     try {
-      // Use the URL of your API
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/contact'  // In production, use relative path
-        : 'http://localhost:5000/api/contact'; // In development
+      // Fully dynamic API URL handling for any environment
+      // This will work with localhost, 0.0.0.0, or any IP address
+      const apiUrl = new URL('/api/contact', window.location.origin);
+      
+      // Replace port if needed - if we're on port 3009 (frontend), API is on 5000
+      if (window.location.port === '3009') {
+        apiUrl.port = '5000';
+      }
+      
+      console.log("Submitting form to:", apiUrl.toString());
         
-      const response = await fetch(apiUrl, {
+      const response = await fetch(apiUrl.toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
+        credentials: 'include'
       });
       
       const data = await response.json();

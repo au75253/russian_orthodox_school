@@ -15,10 +15,25 @@ const PORT = 5000; // Explicitly use port 5000
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 })); // Set security headers with adjusted policy for resources
+
+// More permissive CORS setup for Docker environment
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://stnicholasorthodoxschool.org' // Production domain
-    : ['http://localhost:3000', 'http://localhost:3009'], // Development - support both ports
+  origin: function(origin, callback) {
+    // Allow all origins in development/Docker, or specific ones in production
+    if (!origin || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      const allowedOrigins = [
+        'https://stnicholasorthodoxschool.org',
+        'https://www.stnicholasorthodoxschool.org'
+      ];
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    }
+  },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -66,8 +81,14 @@ mongoose.connect(MONGODB_URI)
     console.warn('Continuing without MongoDB connection - some features may be limited');
   });
 
-// API routes
-app.use('/api/contact', contactRoutes);
+// API routes with additional logging
+app.use('/api/contact', (req, res, next) => {
+  console.log(`Contact form request received from: ${req.ip}, method: ${req.method}`);
+  if (req.method === 'POST') {
+    console.log('Contact form data:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+}, contactRoutes);
 app.use('/api/ollama', ollamaRoutes);
 
 // Serve static assets in production
