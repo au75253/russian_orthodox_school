@@ -513,8 +513,36 @@ const ChatBot = () => {
 
   // Handle clicking suggested prompt
   const handlePromptClick = (prompt) => {
-    setInput(prompt);
-    sendMessage({ preventDefault: () => {} });
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      text: prompt,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    
+    // Add user message to chat
+    setMessages(prev => [...prev, userMessage]);
+    
+    if (connectionMode === 'offline') {
+      handleFallbackResponse(prompt);
+      return;
+    }
+    
+    // Try streaming first
+    (async () => {
+      try {
+        await streamResponse(prompt);
+      } catch (error) {
+        console.log("Streaming failed, falling back to regular API:", error);
+        try {
+          await fetchDirectResponse(prompt);
+        } catch (fallbackError) {
+          console.error("All API methods failed:", fallbackError);
+          setConnectionMode('offline');
+          handleFallbackResponse(prompt);
+        }
+      }
+    })();
   };
 
   // Handle key press
