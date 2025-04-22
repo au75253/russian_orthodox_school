@@ -27,7 +27,16 @@ if [ $# -eq 1 ]; then
     PORT=$1
 fi
 
-echo "🚀 Starting Ollama API server on port $PORT..."
+# Set environment variables for the server
+export HOST="0.0.0.0"
+export PORT_OLLAMA=$PORT
+export ALLOWED_ORIGINS="*"
+
+echo "🚀 Starting Ollama API server on port $PORT (all interfaces)..."
+echo "🔧 Server settings:"
+echo "   - HOST: ${HOST}"
+echo "   - PORT: ${PORT_OLLAMA}"
+echo "   - ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}"
 
 # Activate virtual environment and run the server
 source venv/bin/activate

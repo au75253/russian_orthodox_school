@@ -6,7 +6,6 @@ const helmet = require('helmet');
 const path = require('path');
 const contactRoutes = require('./routes/contactRoutes');
 const ollamaRoutes = require('./routes/ollamaRoutes');
-const { Ollama } = require('ollama');
 
 // Initialize express app
 const app = express();
@@ -32,7 +31,11 @@ app.use(express.urlencoded({ extended: false }));
 // Check Ollama availability
 const checkOllama = async () => {
   try {
-    const OLLAMA_API = process.env.OLLAMA_API || 'http://127.0.0.1:11434';
+    // Use Docker service name for Ollama in container environment
+    const OLLAMA_API = process.env.OLLAMA_API || 'http://ollama:11434';
+    
+    // Use dynamic import instead of require
+    const { Ollama } = await import('ollama');
     const ollama = new Ollama({ host: OLLAMA_API });
     
     const models = await ollama.list();
@@ -54,7 +57,9 @@ app.get('/api/health', (req, res) => {
 });
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/orthodox_school')
+// Use Docker service name for MongoDB in container environment
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongodb:27017/orthodox_school';
+mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => {
     console.error('MongoDB connection error:', err);

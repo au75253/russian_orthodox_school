@@ -24,10 +24,19 @@ const ChatBot = () => {
     "Tell me about your curriculum"
   ];
 
-  // Python API base URL (adjusted for the new server location)
-  const PYTHON_API_BASE = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:5001' 
-    : '/api-py';  // Use a proxy path in production
+  // Get the base URL for the API - dynamically determined for any environment
+  const getApiBaseUrl = () => {
+    // If explicitly set by environment (React apps use REACT_APP_ prefix)
+    if (window.REACT_APP_OLLAMA_API) {
+      return window.REACT_APP_OLLAMA_API;
+    }
+    
+    // For development on the same machine - use same hostname with port 5001
+    return `http://${window.location.hostname}:5001`;
+  };
+  
+  const PYTHON_API_BASE = getApiBaseUrl();
+  console.log(`ChatBot using API base URL: ${PYTHON_API_BASE}`);
     
   // Check server connection and available models
   const checkConnectionStatus = useCallback(async () => {
@@ -36,58 +45,93 @@ const ChatBot = () => {
       const endpoint = `${PYTHON_API_BASE}/status`;
       
       console.log(`Checking connection status at: ${endpoint}`);
-      const response = await fetch(endpoint);
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Connection data:", data);
+      // Add timeout to prevent long waits
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      try {
+        const response = await fetch(endpoint, {
+          signal: controller.signal,
+          mode: 'cors',
+          credentials: 'omit' // Try without credentials for wildcard CORS
+        });
         
-        if (data.status === "ok") {
-          setConnectionMode('online');
-          if (data.models && Array.isArray(data.models)) {
-            // Format models for display
-            const formattedModels = data.models.map(model => 
-              typeof model === 'string' ? { name: model } : model
-            );
-            setAvailableModels(formattedModels);
-            setSelectedModel(data.current_model || formattedModels[0]?.name || "llama2");
-          }
-        } else {
-          setConnectionMode('offline');
-        }
-      } else {
-        // Fall back to the original API check
-        try {
-          const apiHealthResponse = await fetch(`${PYTHON_API_BASE}/api/health`);
-          if (apiHealthResponse.ok) {
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Connection data:", data);
+          
+          if (data.status === "ok") {
             setConnectionMode('online');
-            
-            // If health check works, also try to get models
-            try {
-              const modelsResponse = await fetch(`${PYTHON_API_BASE}/api/models`);
-              if (modelsResponse.ok) {
-                const modelsData = await modelsResponse.json();
-                if (modelsData.success && modelsData.models) {
-                  setAvailableModels(modelsData.models);
-                  setSelectedModel(modelsData.models[0]?.name || "llama2");
-                }
-              }
-            } catch (e) {
-              console.warn("Could not fetch models:", e);
+            if (data.models && Array.isArray(data.models)) {
+              // Format models for display
+              const formattedModels = data.models.map(model => 
+                typeof model === 'string' ? { name: model } : model
+              );
+              setAvailableModels(formattedModels);
+              setSelectedModel(data.current_model || formattedModels[0]?.name || "llama3.2:1b");
             }
           } else {
+            console.warn("Server returned non-OK status:", data);
             setConnectionMode('offline');
           }
-        } catch (healthError) {
-          console.error("API health check failed:", healthError);
-          setConnectionMode('offline');
+        } else {
+          console.warn(`Server responded with status ${response.status}`);
+          // Fall back to the original API check
+          await fallbackServerCheck();
         }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error("Fetch error during connection check:", fetchError);
+        await fallbackServerCheck();
       }
     } catch (error) {
-      console.error("Connection check failed:", error);
+      console.error("Overall connection check failed:", error);
       setConnectionMode('offline');
     }
   }, [PYTHON_API_BASE]);
+
+  // Fallback server check with different endpoints
+  const fallbackServerCheck = async () => {
+    try {
+      console.log("Trying fallback health check...");
+      const apiHealthResponse = await fetch(`${PYTHON_API_BASE}/api/health`, {
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (apiHealthResponse.ok) {
+        console.log("Fallback health check succeeded");
+        setConnectionMode('online');
+        
+        // If health check works, also try to get models
+        try {
+          const modelsResponse = await fetch(`${PYTHON_API_BASE}/api/models`, {
+            mode: 'cors',
+            credentials: 'omit'
+          });
+          
+          if (modelsResponse.ok) {
+            const modelsData = await modelsResponse.json();
+            if (modelsData.success && modelsData.models) {
+              setAvailableModels(modelsData.models);
+              setSelectedModel(modelsData.default_model || modelsData.models[0]?.name || "llama3.2:1b");
+            }
+          }
+        } catch (e) {
+          console.warn("Could not fetch models:", e);
+        }
+      } else {
+        console.warn(`Health check failed with status ${apiHealthResponse.status}`);
+        setConnectionMode('offline');
+      }
+    } catch (healthError) {
+      console.error("API health check failed:", healthError);
+      setConnectionMode('offline');
+    }
+  };
 
   // Check connection on mount
   useEffect(() => {
@@ -275,6 +319,8 @@ const ChatBot = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        mode: 'cors',
+        credentials: 'omit',
         body: JSON.stringify({
           message: messageText,
           model: selectedModel
@@ -352,11 +398,16 @@ const ChatBot = () => {
     } catch (error) {
       console.error("Response error:", error);
       
+      // More detailed error reporting
+      const errorDetails = error.message || "Unknown error";
+      console.error(`API Error Details: ${errorDetails}`);
+      console.error(`Request was made to: ${PYTHON_API_BASE}/api/chat`);
+      
       // Show a different error for mobile devices
       const isMobile = window.innerWidth <= 768;
       const errorMessage = isMobile 
         ? "Sorry, there was a problem connecting to the AI service. Please try again." 
-        : "Sorry, I encountered an error connecting to the AI service. Please try again later.";
+        : `Sorry, I encountered an error connecting to the AI service: ${errorDetails}. Please try again later.`;
       
       setMessages(prev => prev.map(msg => 
         msg.id === botResponseId ? {
@@ -382,6 +433,8 @@ const ChatBot = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        mode: 'cors',
+        credentials: 'omit',
         body: JSON.stringify({
           message: messageText,
           model: selectedModel
@@ -696,7 +749,7 @@ const ChatBot = () => {
                 <div className="message-content">
                   <p>
                     {connectionMode === 'offline' 
-                      ? "Hello! I'm currently in offline mode. Make sure the Python server is running (python ollama_server.py)."
+                      ? "Hello! I'm currently in offline mode."
                       : "Hello! How can I help you today?"}
                   </p>
                 </div>

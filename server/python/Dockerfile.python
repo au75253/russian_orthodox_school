@@ -1,0 +1,51 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Copy requirements file
+COPY ollama_api/requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Python code
+COPY . .
+
+# Add CORS patch to support dynamic origins
+RUN echo 'import os\n\
+from fastapi import FastAPI\n\
+from fastapi.middleware.cors import CORSMiddleware\n\
+\n\
+def patch_cors(app):\n\
+    # Get allowed origins from environment, using all origins as default\n\
+    origin_list = "*"\n\
+    if os.getenv("ALLOWED_ORIGINS"):\n\
+        origin_list = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS").split(",")]\n\
+        print(f"Using specific origins: {origin_list}")\n\
+        app.add_middleware(\n\
+            CORSMiddleware,\n\
+            allow_origins=origin_list,\n\
+            allow_credentials=True,\n\
+            allow_methods=["*"],\n\
+            allow_headers=["*"],\n\
+        )\n\
+    else:\n\
+        print("Using wildcard origin (*)")\n\
+        app.add_middleware(\n\
+            CORSMiddleware,\n\
+            allow_origins=["*"],\n\
+            allow_credentials=False,\n\
+            allow_methods=["*"],\n\
+            allow_headers=["*"],\n\
+        )\n\
+    return app\n' > /app/ollama_api/cors_patch.py
+
+# Update server script to use the patch
+RUN sed -i 's/app = FastAPI(/from cors_patch import patch_cors\napp = FastAPI(/g' /app/ollama_api/ollama_server.py && \
+    sed -i 's/app.add_middleware(\\n    CORSMiddleware,/app = patch_cors(app)/g' /app/ollama_api/ollama_server.py
+
+# Expose port
+EXPOSE 5001
+
+# Command to run the server
+CMD ["python", "ollama_api/ollama_server.py"] 

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # MongoDB service
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app_network
+
+  # Ollama service
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app_network
+
+  # Init container to pull the Ollama model
+  ollama-init:
+    image: ollama/ollama:latest
+    command: pull llama3.2:1b
+    volumes:
+      - ollama_data:/root/.ollama
+    depends_on:
+      - ollama
+    networks:
+      - app_network
+      
+  # Python Ollama server
+  python-ollama:
+    build:
+      context: ./server/python
+      dockerfile: Dockerfile.python
+    ports:
+      - "5001:5001"
+    environment:
+      - OLLAMA_API=http://ollama:11434/api
+      - PORT_OLLAMA=5001
+      # By default, allow all origins by not setting ALLOWED_ORIGINS
+      # - ALLOWED_ORIGINS=http://yourdomain.com,https://yourdomain.com
+    depends_on:
+      - ollama
+      - ollama-init
+    networks:
+      - app_network
+
+  # Main application (React frontend and Node.js backend)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3009:3009"
+      - "5000:5000"
+    depends_on:
+      - mongodb
+      - python-ollama
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  ollama_data: 

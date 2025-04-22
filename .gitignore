@@ -24,3 +24,4 @@ yarn-error.log*
 
 # configs
 .env
+.env.docker

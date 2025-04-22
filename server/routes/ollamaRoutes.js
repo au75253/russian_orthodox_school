@@ -3,8 +3,8 @@ const router = express.Router();
 const fetch = require('node-fetch'); // Using node-fetch instead of Ollama library
 const { ollamaRateLimiter } = require('../middleware/rateLimit');
 
-// Get Ollama API endpoint from env vars
-const OLLAMA_API = process.env.OLLAMA_API || 'http://127.0.0.1:11434';
+// Get Ollama API endpoint from env vars - use Docker service name
+const OLLAMA_API = process.env.OLLAMA_API || 'http://ollama:11434';
 
 /**
  * POST /api/ollama/chat

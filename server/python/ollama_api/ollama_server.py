@@ -29,6 +29,17 @@ load_dotenv()
 # Get the default model from environment
 DEFAULT_MODEL = os.getenv("OLLAMA_DEFAULT_MODEL", "llama3.2:1b")
 
+# Get Ollama service URL from environment
+OLLAMA_SERVICE_URL = os.getenv("OLLAMA_API", "http://localhost:11434/api")
+print(f"Using Ollama API URL: {OLLAMA_SERVICE_URL}")
+
+# Configure Ollama client with the correct host
+# The Ollama Python client expects the base URL without /api
+base_url = OLLAMA_SERVICE_URL.replace('/api', '')
+print(f"Setting Ollama base URL to: {base_url}")
+
+# Initialize the Ollama client - We'll initialize it on demand with the correct URL
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Ollama API Server",
@@ -36,14 +47,30 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3009", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure CORS - dynamic approach, controlled by environment variable
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+USE_WILDCARDS = ALLOWED_ORIGINS == "*" or not ALLOWED_ORIGINS
+
+if USE_WILDCARDS:
+    print("CORS: Using wildcard origins - allowing all cross-origin requests")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,  # Must be False when using wildcard
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # Parse origins from comma-separated string
+    origins_list = [origin.strip() for origin in ALLOWED_ORIGINS.split(",") if origin.strip()]
+    print(f"CORS: Using specific allowed origins: {origins_list}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # System prompt for consistent responses
 SYSTEM_PROMPT = """
@@ -69,7 +96,9 @@ Be concise yet thorough in your responses.
 async def status() -> Dict[str, Any]:
     """Simple status endpoint for quick health checks"""
     try:
-        models = ollama.list()
+        # Create Ollama client with the correct URL
+        ollama_client = ollama.Client(host=base_url)
+        models = ollama_client.list()
         model_names = [model["name"] for model in models["models"]]
         
         return {
@@ -93,7 +122,9 @@ async def health_check() -> Dict[str, str]:
 async def list_models() -> Dict[str, Any]:
     """List all available Ollama models"""
     try:
-        models = ollama.list()
+        # Create Ollama client with the correct URL
+        ollama_client = ollama.Client(host=base_url)
+        models = ollama_client.list()
         return {"success": True, "models": models["models"], "default_model": DEFAULT_MODEL}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -117,7 +148,9 @@ async def chat(request: Request) -> Dict[str, Any]:
     
     try:
         print(f"Sending message to {model}: {message[:30]}...")
-        response = ollama.chat(
+        # Create Ollama client with the correct URL
+        ollama_client = ollama.Client(host=base_url)
+        response = ollama_client.chat(
             model=model, 
             messages=[
                 {
@@ -154,7 +187,9 @@ async def stream(request: Request) -> StreamingResponse:
     async def event_generator():
         """Generate SSE events from Ollama stream"""
         try:
-            stream = ollama.chat(
+            # Create Ollama client with the correct URL
+            ollama_client = ollama.Client(host=base_url)
+            stream = ollama_client.chat(
                 model=model,
                 messages=[
                     {
@@ -189,22 +224,24 @@ async def stream(request: Request) -> StreamingResponse:
 if __name__ == "__main__":
     import uvicorn
     
-    # Default port
-    port = 5001
+    # Get port from environment variable
+    port = int(os.getenv("PORT_OLLAMA", "5001"))
     
     # Check if port is passed as an argument
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print(f"Invalid port: {sys.argv[1]}. Using default port 5001.")
+            print(f"Invalid port: {sys.argv[1]}. Using port {port} from environment.")
     
     print(f"✨ Starting Ollama API server on port {port}...")
     print(f"📚 API Documentation available at http://localhost:{port}/docs")
     
     # Attempt to list models to check Ollama connection
     try:
-        models = ollama.list()
+        # Create Ollama client with the correct URL
+        ollama_client = ollama.Client(host=base_url)
+        models = ollama_client.list()
         model_names = [model["name"] for model in models["models"]]
         if model_names:
             print(f"🤖 Connected to Ollama! Available models: {', '.join(model_names)}")
