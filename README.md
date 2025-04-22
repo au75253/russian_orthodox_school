@@ -194,6 +194,12 @@ To run the application using Docker (recommended for consistent environments acr
 
 Note: On the first run, Ollama may need a few minutes to download the default language model. The contact form will be fully functional once all services are running.
 
+After the build is complete run this command to load in the llm model
+
+```bash
+docker exec russian_orthodox_school-ollama-1 ollama pull llama3.2:1b
+```
+
 ## Production Deployment
 
 1. Build the React application
